@@ -188,4 +188,34 @@ async def resposta_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             equip = e
             break
     if not equip:
-        await update.message.reply_text("
+        await update.message.reply_text("❌ Només el portaveu de l’equip pot enviar respostes.")
+        return
+
+    if ja_resposta(equip, prova_id):
+        await update.message.reply_text(f"⚠️ L'equip '{equip}' ja ha respost la prova {prova_id}.")
+        return
+
+    prova = proves[prova_id]
+    punts, estat = validate_answer(prova, resposta)
+    guardar_submission(equip, prova_id, resposta, punts, estat)
+    
+    await update.message.reply_text(f"✅ Resposta registrada per l'equip '{equip}': {estat}. Punts: {punts}")
+
+# ----------------------------
+# Main
+# ----------------------------
+def main():
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("ajuda", ajuda))
+    app.add_handler(CommandHandler("inscriure", inscriure))
+    app.add_handler(CommandHandler("proves", llistar_proves))
+    app.add_handler(CommandHandler("ranking", ranking))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, resposta_handler))
+    
+    print("✅ Bot Ginkana en marxa...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
