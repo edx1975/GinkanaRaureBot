@@ -113,11 +113,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ajuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "📚 Menú d'ajuda:\n\n"
+        "Per participar, primer t'has d'inscriure. Per fer-ho, envia el text: /inscripció (espai) nom_jugador1,nom2,nom3 (seguit, sense espais). El jugador que inscrigui l'equip serà el que doni les respostes en nom de tot l'equip. Per contestar les preguntes, envia un missatge per cada una amb el seguent format: resposta (espai) número de la pregunta (espai) resposta (una sola paraula, numero o imatge). Cada pregunta es pot contestar nomes una vegada\n\n"
         "Presentació: /start\n"
-        "Llista de proves: /proves\n"
-        "Horaris: 09:30 Inscripcions, 10:00 Inici, 13:30 Final\n"
+        "Horaris: 09:00 Inscripcions, 10:00 Inici, 19:00 Final\n"
         "Inscripció: /inscriure NomEquip nom1,nom2,nom3\n"
-        "Leaderboard: /ranking"
+        "Llista de proves: /proves\n"
+        "Classificació: /ranking\n\n"
+        "* Ajuda personalitzada en l´ús del Bot de Telegram a la parada del grup de Natura Lo Margalló.\n"
+        "** Una iniciativa de Lo Corral Associació Cultural"
     )
     await update.message.reply_text(msg)
 
@@ -153,7 +156,8 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("No hi ha punts registrats encara.")
         return
     sorted_equips = sorted(equips_punts.items(), key=lambda x: x[1], reverse=True)
-    msg = "🏆 Ranking provisional:\n"
+    msg = "🏆 Classificació provisional:\n"
+    "(Classificació pendent de comprovar les imatges)\n\n"
     for i, (equip, punts) in enumerate(sorted_equips, start=1):
         msg += f"{i}. {equip} - {punts} punts\n"
     await update.message.reply_text(msg)
