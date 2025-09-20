@@ -45,18 +45,20 @@ def carregar_equips():
         with open(EQUIPS_CSV, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                equips.setdefault(row["equip"], []).append(row["jugador"])
+                equips[row["equip"]] = {
+                    "portaveu": row["portaveu"],
+                    "jugadors": [j.strip() for j in row["jugadors"].split(",") if j.strip()]
+                }
     return equips
 
-def guardar_equip(equip, jugadors_llista):
+def guardar_equip(equip, portaveu, jugadors_llista):
     hora = datetime.datetime.now().strftime("%H:%M")
     exists = os.path.exists(EQUIPS_CSV)
     with open(EQUIPS_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not exists:
-            writer.writerow(["equip","jugador","hora_inscripcio"])
-        for j in jugadors_llista:
-            writer.writerow([equip, j, hora])
+            writer.writerow(["equip","portaveu","jugadors","hora_inscripcio"])
+        writer.writerow([equip, portaveu, ",".join(jugadors_llista), hora])
 
 def guardar_submission(equip, prova_id, resposta, punts, estat):
     exists = os.path.exists(PUNTS_CSV)
@@ -113,14 +115,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ajuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "📚 Menú d'ajuda:\n\n"
-        "Per participar, primer t'has d'inscriure. Per fer-ho, envia el text: /inscripció (espai) nom_jugador1,nom2,nom3 (seguit, sense espais). El jugador que inscrigui l'equip serà el que doni les respostes en nom de tot l'equip. Per contestar les preguntes, envia un missatge per cada una amb el seguent format: resposta (espai) número de la pregunta (espai) resposta (una sola paraula, numero o imatge). Cada pregunta es pot contestar nomes una vegada\n\n"
-        "Presentació: /start\n"
-        "Horaris: 09:00 Inscripcions, 10:00 Inici, 19:00 Final\n"
-        "Inscripció: /inscriure NomEquip nom1,nom2,nom3\n"
-        "Llista de proves: /proves\n"
-        "Classificació: /ranking\n\n"
-        "* Ajuda personalitzada en l´ús del Bot de Telegram a la parada del grup de Natura Lo Margalló.\n"
-        "** Una iniciativa de Lo Corral Associació Cultural"
+        "Per participar, crea un equip de 2 a 6 jugadors i inscriu-lo enviant un missatge de text: /inscripció (espai) nom_jugador1,nom2,nom3 (seguit, sense espais). El jugador que inscrigui l'equip serà el portaveu i el que doni les respostes en nom de tot l'equip. Per contestar les preguntes, envia un missatge per cada una amb el seguent format: resposta (espai) número de la pregunta (espai) resposta (una sola paraula, numero o imatge). Cada pregunta es pot contestar nomes una vegada\n\n" "Presentació: /start\n" "Horaris: 09:00 Inscripcions, 10:00 Inici, 19:00 Final\n" "Inscripció: /inscriure NomEquip nom1,nom2,nom3\n" "Llista de proves: /proves\n" "Classificació: /ranking\n\n" "* Ajuda personalitzada en l´ús del Bot de Telegram a la parada del grup de Natura Lo Margalló.\n" "** Una iniciativa de Lo Corral Associació Cultural"
     )
     await update.message.reply_text(msg)
 
@@ -134,8 +129,9 @@ async def inscriure(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not jugadors_llista:
         await update.message.reply_text("❌ Cal indicar com a mínim un jugador.")
         return
-    guardar_equip(equip, jugadors_llista)
-    await update.message.reply_text(f"✅ Equip '{equip}' registrat amb jugadors: {', '.join(jugadors_llista)}")
+    portaveu = update.message.from_user.username or update.message.from_user.first_name
+    guardar_equip(equip, portaveu, jugadors_llista)
+    await update.message.reply_text(f"✅ Equip '{equip}' registrat amb portaveu @{portaveu} i jugadors: {', '.join(jugadors_llista)}")
 
 async def llistar_proves(update: Update, context: ContextTypes.DEFAULT_TYPE):
     proves = carregar_proves()
@@ -156,8 +152,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("No hi ha punts registrats encara.")
         return
     sorted_equips = sorted(equips_punts.items(), key=lambda x: x[1], reverse=True)
-    msg = "🏆 Classificació provisional:\n"
-    "(Classificació pendent de comprovar les imatges)\n\n"
+    msg = "🏆 Classificació provisional:\n(Classificació pendent de comprovar les imatges)\n\n"
     for i, (equip, punts) in enumerate(sorted_equips, start=1):
         msg += f"{i}. {equip} - {punts} punts\n"
     await update.message.reply_text(msg)
@@ -177,28 +172,28 @@ async def resposta_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     prova_id = parts[1]
     resposta = parts[2]
-    proves = carregar_proves()
     
+    proves = carregar_proves()
     if prova_id not in proves:
         await update.message.reply_text("❌ Prova no trobada.")
         return
-    
-    # Assigna equip segons si el jugador està inscrit en algun
-    equips = carregar_equips()
+
+    # Només portaveu pot respondre
     user = update.message.from_user.username or update.message.from_user.first_name
+    equips = carregar_equips()
     equip = None
-    for e, jugadors in equips.items():
-        if user in jugadors:
+    for e, info in equips.items():
+        if info["portaveu"] == user:
             equip = e
             break
-    
     if not equip:
-        equip = user  # si no està inscrit, va amb nom d'usuari
-    
-    if ja_resposta(equip, prova_id):
-        await update.message.reply_text(f"⚠️ L'equip '{equip}' ja ha respost la prova {prova_id}. No es pot repetir.")
+        await update.message.reply_text("❌ Només el portaveu de l’equip pot enviar respostes.")
         return
-    
+
+    if ja_resposta(equip, prova_id):
+        await update.message.reply_text(f"⚠️ L'equip '{equip}' ja ha respost la prova {prova_id}.")
+        return
+
     prova = proves[prova_id]
     punts, estat = validate_answer(prova, resposta)
     guardar_submission(equip, prova_id, resposta, punts, estat)
