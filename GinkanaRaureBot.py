@@ -38,7 +38,8 @@ def carregar_proves():
             reader = csv.DictReader(f)
             for row in reader:
                 # Normalitza l'ID perquè 01, 1 o 001 siguin el mateix
-                proves[str(int(row["id"]))] = row    return proves
+                proves[str(int(row["id"]))] = row
+    return proves
 
 def carregar_equips():
     equips = {}
