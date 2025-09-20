@@ -9,8 +9,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 # ----------------------------
 # Variables d'entorn
 # ----------------------------
-TELEGRAM_TOKEN = ("TELEGRAM_TOKEN")
-OPENAI_API_KEY = ("OPENAI_API_KEY")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not TELEGRAM_TOKEN:
     print("❌ Falta la variable d'entorn TELEGRAM_TOKEN")
