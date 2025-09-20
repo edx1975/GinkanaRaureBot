@@ -1,0 +1,198 @@
+
+
+import os
+import csv
+import json
+import datetime
+import openai
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+
+# ----------------------------
+# Variables d'entorn
+# ----------------------------
+TELEGRAM_TOKEN = os.getenv("7901264524:AAG2ekYzZYooZrsYmOH5gGYOOTgqz6fCZnw")
+OPENAI_API_KEY = os.getenv("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")
+
+if not TELEGRAM_TOKEN:
+    print("❌ Falta la variable d'entorn TELEGRAM_TOKEN")
+    exit(1)
+
+if not OPENAI_API_KEY:
+    print("❌ Falta la variable d'entorn OPENAI_API_KEY")
+    exit(1)
+
+openai.api_key = OPENAI_API_KEY
+
+# ----------------------------
+# Fitxers CSV i JSON
+# ----------------------------
+PROVES_CSV = os.getenv("GINKANA_PROVES_CSV", "./proves_ginkana.csv")
+EQUIPS_CSV = os.getenv("GINKANA_EQUIPS_CSV", "./equips.csv")
+PUNTS_CSV = os.getenv("GINKANA_PUNTS_CSV", "./punts_equips.csv")
+SUBMISSIONS_JSON = os.getenv("GINKANA_SUBS_JSON", "./submissions.json")
+
+# ----------------------------
+# Funcions helpers
+# ----------------------------
+
+def carregar_proves():
+    proves = {}
+    with open(PROVES_CSV, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            proves[row["id"]] = row
+    return proves
+
+def carregar_equips():
+    equips = {}
+    if os.path.exists(EQUIPS_CSV):
+        with open(EQUIPS_CSV, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                equips[row["equip"]] = row
+    return equips
+
+def guardar_equip(equip, jugadors):
+    hora = datetime.datetime.now().strftime("%H:%M")
+    exists = os.path.exists(EQUIPS_CSV)
+    with open(EQUIPS_CSV, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not exists:
+            writer.writerow(["equip","jugadors","hora_inscripcio"])
+        writer.writerow([equip,jugadors,hora])
+
+def guardar_submission(equip, prova_id, resposta, punts, estat):
+    exists = os.path.exists(PUNTS_CSV)
+    with open(PUNTS_CSV, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not exists:
+            writer.writerow(["equip","prova_id","resposta","punts","estat"])
+        writer.writerow([equip, prova_id, resposta, punts, estat])
+
+# ----------------------------
+# Validació de respostes
+# ----------------------------
+def validate_answer(prova, resposta):
+    tipus = prova["tipus"]
+    correct_answer = prova["resposta"]
+    punts = int(prova["punts"])
+    
+    if correct_answer == "REVIEW_REQUIRED":
+        return 0, "PENDENT"
+    
+    if tipus in ["trivia", "qr"]:
+        if str(resposta).strip().lower() == str(correct_answer).strip().lower():
+            return punts, "VALIDADA"
+        else:
+            return 0, "INCORRECTA"
+    
+    # Altres tipus sempre pendent
+    return 0, "PENDENT"
+
+# ----------------------------
+# Comandes del bot
+# ----------------------------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 Benvingut a la Ginkana Fira del Raure 2025 de Ginestar!\n\n"
+        "Comandes disponibles:\n"
+        "/ajuda - veure menú d'ajuda\n"
+        "/inscriure NomEquip NPersones - registrar el teu equip\n"
+        "/proves - veure llista de proves\n"
+        "/ranking - veure puntuacions\n\n"
+        "Per respondre una prova envia:\n"
+        "resposta <id> <text>\n"
+        "O envia foto amb caption: resposta <id>"
+    )
+
+async def ajuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = (
+        "📚 Menú d'ajuda:\n\n"
+        "Presentació: /start\n"
+        "Explicació del joc: Consulta les instruccions inicials\n"
+        "Llista de proves: /proves\n"
+        "Horaris: 09:30 Inscripcions, 10:00 Inici, 13:30 Final\n"
+        "Inscripció: /inscriure NomEquip NPersones\n"
+        "Leaderboard: /ranking"
+    )
+    await update.message.reply_text(msg)
+
+async def inscriure(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) < 2:
+        await update.message.reply_text("Format: /inscriure NomEquip NPersones")
+        return
+    equip = context.args[0]
+    jugadors = context.args[1]
+    guardar_equip(equip, jugadors)
+    await update.message.reply_text(f"✅ Equip '{equip}' registrat amb {jugadors} participants!")
+
+async def llistar_proves(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    proves = carregar_proves()
+    msg = "📋 Llista de proves:\n"
+    for pid, prova in proves.items():
+        msg += f"{pid}. {prova['titol']} ({prova['tipus']}) - {prova['punts']} punts\n"
+    await update.message.reply_text(msg)
+
+async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Calcula puntuació per equip
+    equips_punts = {}
+    if os.path.exists(PUNTS_CSV):
+        with open(PUNTS_CSV, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["estat"] == "VALIDADA":
+                    equips_punts[row["equip"]] = equips_punts.get(row["equip"],0) + int(row["punts"])
+    if not equips_punts:
+        await update.message.reply_text("No hi ha punts registrats encara.")
+        return
+    sorted_equips = sorted(equips_punts.items(), key=lambda x: x[1], reverse=True)
+    msg = "🏆 Ranking provisional:\n"
+    for i, (equip, punts) in enumerate(sorted_equips, start=1):
+        msg += f"{i}. {equip} - {punts} punts\n"
+    await update.message.reply_text(msg)
+
+# ----------------------------
+# Handler per respostes lliures
+# ----------------------------
+async def resposta_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if not text.lower().startswith("resposta"):
+        return
+    parts = text.split(maxsplit=2)
+    if len(parts) < 3:
+        await update.message.reply_text("Format correcte: resposta <id> <text>")
+        return
+    prova_id = parts[1]
+    resposta = parts[2]
+    proves = carregar_proves()
+    if prova_id not in proves:
+        await update.message.reply_text("Prova no trobada.")
+        return
+    prova = proves[prova_id]
+    punts, estat = validate_answer(prova, resposta)
+    equip = update.message.from_user.username or update.message.from_user.first_name
+    guardar_submission(equip, prova_id, resposta, punts, estat)
+    await update.message.reply_text(f"Resposta registrada: {estat}. Punts obtinguts: {punts}")
+
+# ----------------------------
+# Main
+# ----------------------------
+def main():
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    
+    # Comandes
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("ajuda", ajuda))
+    app.add_handler(CommandHandler("inscriure", inscriure))
+    app.add_handler(CommandHandler("proves", llistar_proves))
+    app.add_handler(CommandHandler("ranking", ranking))
+    
+    # Respostes lliures
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, resposta_handler))
+    
+    print("✅ Bot Ginkana en marxa...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()

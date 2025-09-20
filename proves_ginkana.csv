@@ -1,0 +1,31 @@
+﻿id,titol,tipus,descripcio,punts,resposta,nota
+1,Escut del poble,foto,Fes una foto clara de l’escut del poble a una façana o placa.,15,REVIEW_REQUIRED,"Validar amb imatge, pot requerir revisió"
+2,Any de construcció,trivia,En quin any es va inaugurar l’edifici principal del poble?,10,1901,Resposta exacta numèrica
+3,Forn antic,foto,Fotografia la façana d’un forn o pastisseria amb el rètol visible.,15,REVIEW_REQUIRED,OCR amb paraula 'Forn' o revisió
+4,QR del mercat,qr,Escaneja el QR col·locat al mercat municipal i envia el codi.,12,XYZ123,Codi esperat XYZ123
+5,Rètol lletra antiga,foto,Troba i fotografia un rètol amb grafia antiga o cal·ligràfica.,15,REVIEW_REQUIRED,OCR + revisió humana si cal
+6,Font emblemàtica,foto+trivia,Fotografia la font principal i respon quin nom diu la placa.,15,Sant Jordi,Validar imatge + OCR text
+7,Mur o grafiti local,foto,Fotografia un mural o grafiti que representi el poble.,12,REVIEW_REQUIRED,Classificació imatge o revisió
+8,Plaça Major,trivia,Quina família/personalitat té una placa a la Plaça Major?,10,Serra,Resposta textual curta
+9,Botiga >50 anys,foto+text,Fotografia la botiga més antiga i indica l’any d’obertura.,15,REVIEW_REQUIRED,Foto + text verificable
+10,Rètol en dialecte,foto,Fotografia un rètol amb una paraula en dialecte local.,15,REVIEW_REQUIRED,OCR + matching dialecte
+11,Porta més antiga,foto+text,Fotografia la porta que sembli més antiga i explica per què.,15,REVIEW_REQUIRED,Revisió humana
+12,Església dedicació,trivia,Quina és la dedicació de l’església principal (ex. Sant Pere)?,10,Sant Pere,Resposta textual curta
+13,Pont o passarel·la,foto,Fotografia un pont o passarel·la amb el riu o carrer sota.,12,REVIEW_REQUIRED,Classificació imatge
+14,Rellotge públic,foto,Foto de l’equip sota un rellotge públic visible.,12,REVIEW_REQUIRED,Detecció rellotge o revisió
+15,Placa commemorativa,foto,Fotografia una placa commemorativa (respectuosa).,15,REVIEW_REQUIRED,OCR + revisió humana
+16,Botiga amb animal,foto,Fotografia un comerç amb un nom d’animal.,10,REVIEW_REQUIRED,OCR matching amb animals
+17,Cançó local,video/audio,Grava 10 segons d’una cançó tradicional local.,20,REVIEW_REQUIRED,Revisió humana
+18,Plat típic,foto+text,Fotografia un plat típic i indica l’ingredient principal.,12,REVIEW_REQUIRED,Validació imatge + text
+19,Anècdota veí >65,text+foto,Recull en 2 línies una anècdota d’un veí de més de 65 anys.,20,REVIEW_REQUIRED,Revisió humana + consentiment
+20,Banc original,foto+text,Fotografia un banc públic original i explica per què.,12,REVIEW_REQUIRED,Revisió humana
+21,Llibre en bústia,foto,"Fotografia un llibre en una bústia d’intercanvi, amb títol visible.",10,REVIEW_REQUIRED,OCR títol llibre
+22,Element festa popular,foto,Fotografia un element característic d’una festa local.,15,REVIEW_REQUIRED,Classificació imatge
+23,Rètol amb errata,foto,Fotografia un rètol amb una errata o grafia curiosa.,12,REVIEW_REQUIRED,OCR + revisió
+24,Porta amb número romà,foto,Fotografia una placa amb un número romà o data romana.,10,REVIEW_REQUIRED,OCR números romans
+25,Parada amb producte local,foto+text,Fotografia una parada amb producte local i digues quin és.,12,REVIEW_REQUIRED,Foto + text
+26,Selfie amb comerciant,foto,Selfie amb un comerciant (amb consentiment).,15,REVIEW_REQUIRED,Revisió humana
+27,Cadira davant edifici històric,foto,Fotografia una cadira buida davant un edifici històric.,10,REVIEW_REQUIRED,"Foto creativa, revisió"
+28,Arbre o planta emblemàtica,foto+trivia,Fotografia un arbre emblemàtic i digues l’espècie o nom popular.,12,REVIEW_REQUIRED,Classificació imatge + text
+29,Línia del temps,text,Escriu 3 dates clau de la història del poble amb font.,15,REVIEW_REQUIRED,Revisió humana
+30,Foto més creativa,foto,Envia la foto més creativa del dia.,20,REVIEW_REQUIRED,Jurat o votació final
