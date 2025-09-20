@@ -1,6 +1,5 @@
 import os
 import csv
-import json
 import datetime
 import openai
 from telegram import Update
@@ -23,17 +22,15 @@ if not OPENAI_API_KEY:
 openai.api_key = OPENAI_API_KEY
 
 # ----------------------------
-# Fitxers CSV i JSON
+# Fitxers CSV
 # ----------------------------
 PROVES_CSV = os.getenv("GINKANA_PROVES_CSV", "./proves_ginkana.csv")
 EQUIPS_CSV = os.getenv("GINKANA_EQUIPS_CSV", "./equips.csv")
 PUNTS_CSV = os.getenv("GINKANA_PUNTS_CSV", "./punts_equips.csv")
-SUBMISSIONS_JSON = os.getenv("GINKANA_SUBS_JSON", "./submissions.json")
 
 # ----------------------------
-# Funcions helpers
+# Helpers
 # ----------------------------
-
 def carregar_proves():
     proves = {}
     with open(PROVES_CSV, newline="", encoding="utf-8-sig") as f:
@@ -42,24 +39,24 @@ def carregar_proves():
             proves[row["id"]] = row
     return proves
 
-
 def carregar_equips():
     equips = {}
     if os.path.exists(EQUIPS_CSV):
         with open(EQUIPS_CSV, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                equips[row["equip"]] = row
+                equips.setdefault(row["equip"], []).append(row["jugador"])
     return equips
 
-def guardar_equip(equip, jugadors):
+def guardar_equip(equip, jugadors_llista):
     hora = datetime.datetime.now().strftime("%H:%M")
     exists = os.path.exists(EQUIPS_CSV)
     with open(EQUIPS_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not exists:
-            writer.writerow(["equip","jugadors","hora_inscripcio"])
-        writer.writerow([equip,jugadors,hora])
+            writer.writerow(["equip","jugador","hora_inscripcio"])
+        for j in jugadors_llista:
+            writer.writerow([equip, j, hora])
 
 def guardar_submission(equip, prova_id, resposta, punts, estat):
     exists = os.path.exists(PUNTS_CSV)
@@ -68,6 +65,16 @@ def guardar_submission(equip, prova_id, resposta, punts, estat):
         if not exists:
             writer.writerow(["equip","prova_id","resposta","punts","estat"])
         writer.writerow([equip, prova_id, resposta, punts, estat])
+
+def ja_resposta(equip, prova_id):
+    if not os.path.exists(PUNTS_CSV):
+        return False
+    with open(PUNTS_CSV, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["equip"] == equip and row["prova_id"] == prova_id:
+                return True
+    return False
 
 # ----------------------------
 # Validació de respostes
@@ -86,45 +93,46 @@ def validate_answer(prova, resposta):
         else:
             return 0, "INCORRECTA"
     
-    # Altres tipus sempre pendent
     return 0, "PENDENT"
 
 # ----------------------------
-# Comandes del bot
+# Comandes
 # ----------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Benvingut a la Ginkana Fira del Raure 2025 de Ginestar!\n\n"
-        "Comandes disponibles:\n"
+        "👋 Benvingut a la Gran Ginkana de la Fira del Raure 2025 de Ginestar!\n\n"
+        "📖 Comandes útils:\n"
         "/ajuda - veure menú d'ajuda\n"
-        "/inscriure NomEquip NPersones - registrar el teu equip\n"
+        "/inscriure NomEquip nom1,nom2,nom3 - registrar el teu equip\n"
         "/proves - veure llista de proves\n"
         "/ranking - veure puntuacions\n\n"
-        "Per respondre una prova envia:\n"
-        "resposta <id> <text>\n"
-        "O envia foto amb caption: resposta <id>"
+        "📣 Per respondre una prova envia:\n"
+        "resposta <número> <resposta>"
     )
 
 async def ajuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "📚 Menú d'ajuda:\n\n"
         "Presentació: /start\n"
-        "Explicació del joc: Consulta les instruccions inicials\n"
         "Llista de proves: /proves\n"
         "Horaris: 09:30 Inscripcions, 10:00 Inici, 13:30 Final\n"
-        "Inscripció: /inscriure NomEquip NPersones\n"
+        "Inscripció: /inscriure NomEquip nom1,nom2,nom3\n"
         "Leaderboard: /ranking"
     )
     await update.message.reply_text(msg)
 
 async def inscriure(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 2:
-        await update.message.reply_text("Format: /inscriure NomEquip NPersones")
+        await update.message.reply_text("Format: /inscriure NomEquip nom1,nom2,nom3")
         return
     equip = context.args[0]
-    jugadors = context.args[1]
-    guardar_equip(equip, jugadors)
-    await update.message.reply_text(f"✅ Equip '{equip}' registrat amb {jugadors} participants!")
+    jugadors_text = " ".join(context.args[1:])
+    jugadors_llista = [j.strip() for j in jugadors_text.split(",") if j.strip()]
+    if not jugadors_llista:
+        await update.message.reply_text("❌ Cal indicar com a mínim un jugador.")
+        return
+    guardar_equip(equip, jugadors_llista)
+    await update.message.reply_text(f"✅ Equip '{equip}' registrat amb jugadors: {', '.join(jugadors_llista)}")
 
 async def llistar_proves(update: Update, context: ContextTypes.DEFAULT_TYPE):
     proves = carregar_proves()
@@ -134,7 +142,6 @@ async def llistar_proves(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg)
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Calcula puntuació per equip
     equips_punts = {}
     if os.path.exists(PUNTS_CSV):
         with open(PUNTS_CSV, newline="", encoding="utf-8") as f:
@@ -152,27 +159,47 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg)
 
 # ----------------------------
-# Handler per respostes lliures
+# Handler respostes
 # ----------------------------
 async def resposta_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if not text.lower().startswith("resposta"):
         return
+    
     parts = text.split(maxsplit=2)
     if len(parts) < 3:
         await update.message.reply_text("Format correcte: resposta <id> <text>")
         return
+    
     prova_id = parts[1]
     resposta = parts[2]
     proves = carregar_proves()
+    
     if prova_id not in proves:
-        await update.message.reply_text("Prova no trobada.")
+        await update.message.reply_text("❌ Prova no trobada.")
         return
+    
+    # Assigna equip segons si el jugador està inscrit en algun
+    equips = carregar_equips()
+    user = update.message.from_user.username or update.message.from_user.first_name
+    equip = None
+    for e, jugadors in equips.items():
+        if user in jugadors:
+            equip = e
+            break
+    
+    if not equip:
+        equip = user  # si no està inscrit, va amb nom d'usuari
+    
+    if ja_resposta(equip, prova_id):
+        await update.message.reply_text(f"⚠️ L'equip '{equip}' ja ha respost la prova {prova_id}. No es pot repetir.")
+        return
+    
     prova = proves[prova_id]
     punts, estat = validate_answer(prova, resposta)
-    equip = update.message.from_user.username or update.message.from_user.first_name
     guardar_submission(equip, prova_id, resposta, punts, estat)
-    await update.message.reply_text(f"Resposta registrada: {estat}. Punts obtinguts: {punts}")
+    
+    await update.message.reply_text(f"✅ Resposta registrada per l'equip '{equip}': {estat}. Punts: {punts}")
 
 # ----------------------------
 # Main
@@ -180,14 +207,11 @@ async def resposta_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     
-    # Comandes
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ajuda", ajuda))
     app.add_handler(CommandHandler("inscriure", inscriure))
     app.add_handler(CommandHandler("proves", llistar_proves))
     app.add_handler(CommandHandler("ranking", ranking))
-    
-    # Respostes lliures
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, resposta_handler))
     
     print("✅ Bot Ginkana en marxa...")
