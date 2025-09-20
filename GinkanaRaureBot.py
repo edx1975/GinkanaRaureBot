@@ -37,7 +37,7 @@ def carregar_proves():
         with open(PROVES_CSV, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                proves[row["id"]] = row
+                proves[str(int(row["id"]))] = row  # normalitza a enter i després string
     return proves
 
 def carregar_equips():
