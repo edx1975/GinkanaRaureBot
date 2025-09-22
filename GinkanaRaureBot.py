@@ -1,7 +1,8 @@
 import logging
 import asyncio
-import os 
+import os
 from datetime import datetime as dt
+import pytz
 from telegram import Update, constants
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -14,7 +15,10 @@ logging.basicConfig(
 )
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN_RAURE")
-TARGET_DATE = dt(2025, 9, 28, 11, 0, 0)
+
+# Definir zona horària de Madrid
+MADRID_TZ = pytz.timezone("Europe/Madrid")
+TARGET_DATE = MADRID_TZ.localize(dt(2025, 9, 28, 11, 0, 0))
 
 fixed_message_id = None
 fixed_chat_id = None
@@ -23,7 +27,8 @@ fixed_chat_id = None
 # FUNCIONS COMPTE ENRERE
 # ----------------------------
 def generar_countdown():
-    remaining = TARGET_DATE - dt.now()
+    now = dt.now(MADRID_TZ)  # hora actual amb zona horària correcta
+    remaining = TARGET_DATE - now
     if remaining.total_seconds() > 0:
         days = remaining.days
         hours, remainder = divmod(remaining.seconds, 3600)
@@ -32,11 +37,10 @@ def generar_countdown():
             f"       ⏳ {days} dies\n"
             f"       ⏰ {hours} hores\n"
             f"       ⏱️ {minutes} minuts\n"
-            f"       ⏲️ {seconds} segons"
         )
         message = (
             f"🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n\n"
-            f"⏳ Compte enrere fins diumenge 28 de setembre de 2025 a les 11h:\n"
+            f"⏳ Compte enrere fins diumenge 28 de setembre de 2025 a les 11h (hora local):\n"
             f"{countdown}\n\n"
             f"🔗 El Bot de la Ginkana serà accessible aquí: <b>@Gi*************Bot</b>\n"
             "ℹ️ L'enllaç al JOC es mostrarà el diumenge 28 de setembre de 2025 a les 11h."
@@ -60,7 +64,8 @@ async def countdown_task(context: ContextTypes.DEFAULT_TYPE):
         return
 
     while True:
-        remaining_seconds = (TARGET_DATE - dt.now()).total_seconds()
+        now = dt.now(MADRID_TZ)
+        remaining_seconds = (TARGET_DATE - now).total_seconds()
         if remaining_seconds > 0:
             message = generar_countdown()
         else:
@@ -86,7 +91,6 @@ async def countdown_task(context: ContextTypes.DEFAULT_TYPE):
 # ----------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global fixed_message_id, fixed_chat_id
-    # missatge de benvinguda
     await update.message.reply_text(
         "👋 Hola! Benvingut/da al Bot de la Ginkana de la Fira del Raure 2025!\n"
         "Aquí tens el compte enrere 👇",
