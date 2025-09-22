@@ -12,7 +12,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-TELEGRAM_TOKEN = "TELEGRAM_TOKEN"
+TELEGRAM_TOKEN = os.getenv"TELEGRAM_TOKEN"
 TARGET_DATE = dt(2025, 9, 28, 11, 0, 0)
 
 fixed_message_id = None
