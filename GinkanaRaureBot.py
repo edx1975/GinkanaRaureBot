@@ -1,166 +1,93 @@
-import logging
 import asyncio
-import os
-import json
-from datetime import datetime as dt
+import logging
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from telegram import Update, constants
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    ContextTypes,
-    MessageHandler,
-    filters,
-)
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-# ----------------------------
-# CONFIGURACIÓ
-# ----------------------------
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
-
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN_RAURE")
-if not TELEGRAM_TOKEN:
-    raise ValueError("❌ La variable d'entorn TELEGRAM_TOKEN_RAURE no està definida")
-
+# Config
+TELEGRAM_TOKEN = "EL_TEU_TOKEN"
 MADRID_TZ = ZoneInfo("Europe/Madrid")
-TARGET_DATE = dt(2025, 9, 28, 11, 0, 0, tzinfo=MADRID_TZ)
 
-IMATGE_PATH = "imatge.jpg"  # Ruta de la imatge local
-CHATS_FILE = "chats.json"
+# Logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
-# ----------------------------
-# FUNCIONS PERSISTÈNCIA
-# ----------------------------
-def carregar_chats():
-    if os.path.exists(CHATS_FILE):
-        with open(CHATS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+# Variables globals
+temps_objectiu = datetime.now(MADRID_TZ) + timedelta(minutes=1)
+countdown_message_id = None
+chat_id_global = None
 
-def guardar_chats(chats):
-    with open(CHATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(chats, f, indent=2, ensure_ascii=False)
 
-# Diccionari: {chat_id: message_id}
-registered_chats = carregar_chats()
+# Handlers
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global chat_id_global
+    chat_id_global = update.effective_chat.id
+    await update.message.reply_text("Compte enrere iniciat! 🎉")
 
-# ----------------------------
-# FUNCIONS COMPTE ENRERE
-# ----------------------------
-def generar_countdown():
-    now = dt.now(MADRID_TZ)
-    remaining = TARGET_DATE - now
-    if remaining.total_seconds() > 0:
-        days = remaining.days
-        hours, remainder = divmod(remaining.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        countdown = (
-            f"       ⏳ {days} dies\n"
-            f"       ⏰ {hours} hores\n"
-            f"       ⏱️ {minutes} minuts\n"
-            f"       ⏲️ {seconds} segons"
-        )
-        return (
-            f"🎉 <b>GRAN GINKANA DE LA FIRA DEL RAURE DE GINESTAR 2025</b> 🎉\n\n"
-            f"⏳ Compte enrere fins diumenge 28 de setembre de 2025 a les 11h:\n"
-            f"{countdown}"
-        )
-    else:
-        return generar_final()
 
-def generar_final():
-    return (
-        "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n\n"
-        "⏳ El compte enrere ha finalitzat!\n\n"
-        "🔗 El JOC de la Ginkana és: <b>@GinkanaGinestarBot</b>\n"
-        "Accediu-hi per inscriure-us i començar la Ginkana!"
-    )
-
-# ----------------------------
-# HANDLERS
-# ----------------------------
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = str(update.effective_chat.id)
+    logger.info(f"Missatge rebut: {update.message.text}")
 
-    # Si no tenim registrat aquest xat → enviar missatge i guardar ID del missatge
-    if chat_id not in registered_chats:
-        if os.path.exists(IMATGE_PATH):
-            with open(IMATGE_PATH, "rb") as f:
-                msg = await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=f,
-                    caption=generar_countdown(),
-                    parse_mode=constants.ParseMode.HTML,
-                )
-        else:
-            msg = await update.message.reply_text(
-                generar_countdown(),
-                parse_mode=constants.ParseMode.HTML,
-            )
-
-        registered_chats[chat_id] = msg.message_id
-        guardar_chats(registered_chats)
 
 async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    if os.path.exists(IMATGE_PATH):
-        with open(IMATGE_PATH, "rb") as f:
-            await context.bot.send_photo(
-                chat_id=chat_id,
-                photo=f,
-                caption=generar_final(),
-                parse_mode=constants.ParseMode.HTML,
-            )
-    else:
-        await update.message.reply_text(
-            generar_final(),
-            parse_mode=constants.ParseMode.HTML,
-        )
+    await update.message.reply_text("💥 REBOOOM! 💥")
 
-async def enviar_recordatori(context: ContextTypes.DEFAULT_TYPE):
-    message = generar_countdown()
-    for chat_id in registered_chats.keys():
-        try:
-            await context.bot.send_message(
-                chat_id=int(chat_id),
-                text=message,
-                parse_mode=constants.ParseMode.HTML,
-            )
-        except Exception as e:
-            logging.warning(f"No s'ha pogut enviar recordatori a {chat_id}: {e}")
 
-async def actualitzar_countdown(app):
-    """Actualitza el missatge del compte enrere cada minut"""
+# Funcions countdown
+async def actualitzar_countdown(app: Application):
+    global countdown_message_id, chat_id_global
     while True:
-        message = generar_countdown()
-        for chat_id, message_id in registered_chats.items():
+        if chat_id_global:
+            temps_rest = temps_objectiu - datetime.now(MADRID_TZ)
+            if temps_rest.total_seconds() > 0:
+                text = f"⏳ Temps restant: {temps_rest}"
+            else:
+                text = "🎉 S'ha acabat el compte enrere!"
             try:
-                await app.bot.edit_message_text(
-                    chat_id=int(chat_id),
-                    message_id=message_id,
-                    text=message,
-                    parse_mode=constants.ParseMode.HTML,
-                )
+                if countdown_message_id:
+                    await app.bot.edit_message_text(
+                        chat_id=chat_id_global,
+                        message_id=countdown_message_id,
+                        text=text,
+                    )
+                else:
+                    msg = await app.bot.send_message(chat_id=chat_id_global, text=text)
+                    countdown_message_id = msg.message_id
             except Exception as e:
-                logging.warning(f"No s'ha pogut editar el missatge a {chat_id}: {e}")
-        await asyncio.sleep(60)
+                logger.error(f"Error actualitzant countdown: {e}")
+        await asyncio.sleep(10)
 
-# ----------------------------
-# MAIN
-# ----------------------------
-async def main():
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
+
+# Recordatoris
+async def enviar_recordatori(app: Application):
+    if chat_id_global:
+        await app.bot.send_message(chat_id=chat_id_global, text="📢 Recordatori setmanal!")
+
+
+# Hook perquè el countdown s’iniciï quan el bot ja està actiu
+async def iniciar_countdown(app: Application):
+    app.create_task(actualitzar_countdown(app))
+
+
+def main():
+    app = (
+        Application.builder()
+        .token(TELEGRAM_TOKEN)
+        .post_init(iniciar_countdown)  # 👈 Ens assegurem que el loop ja corre
+        .build()
+    )
 
     # Handlers
-    app.add_handler(MessageHandler(filters.ALL, handle_message))
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("rebooom", rebooom))
+    app.add_handler(MessageHandler(filters.ALL, handle_message))
 
-    # Programador de tasques: dissabte i diumenge a les 10h
+    # Scheduler
     scheduler = AsyncIOScheduler(timezone=MADRID_TZ)
     scheduler.add_job(
         enviar_recordatori,
@@ -169,11 +96,9 @@ async def main():
     )
     scheduler.start()
 
-    # Iniciar la tasca de comptador actualitzable
-    app.create_task(actualitzar_countdown(app))
+    logger.info("🚀 Bot de compte enrere en marxa...")
+    app.run_polling()  # ✅ Aquí gestionem el loop correctament
 
-    logging.info("🚀 Bot de compte enrere en marxa...")
-    await app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
