@@ -8,7 +8,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 # Config
-TELEGRAM_TOKEN = "EL_TEU_TOKEN"
+import os
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN_RAURE")
+
+if not TELEGRAM_TOKEN:
+    raise ValueError("❌ No s'ha definit la variable d'entorn TELEGRAM_TOKEN_RAURE")
+
 MADRID_TZ = ZoneInfo("Europe/Madrid")
 
 # Logging
