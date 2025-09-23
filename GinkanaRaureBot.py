@@ -102,6 +102,13 @@ async def enviar_recordatori(context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logging.warning(f"No s'ha pogut enviar recordatori a {chat_id}: {e}")
 
+async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mostra el missatge final temporalment sense aturar el compte enrere"""
+    await update.message.reply_text(
+        generar_final(),
+        parse_mode=constants.ParseMode.HTML
+    )
+
 # ----------------------------
 # MAIN
 # ----------------------------
@@ -111,12 +118,15 @@ def main():
     # Qualsevol missatge → mostrar compte enrere
     app.add_handler(MessageHandler(filters.ALL, handle_message))
 
+    # Comandament /rebooom
+    app.add_handler(CommandHandler("rebooom", rebooom))
+
     # Programador de tasques
     scheduler = AsyncIOScheduler(timezone=MADRID_TZ)
     scheduler.add_job(
         enviar_recordatori,
         CronTrigger(day_of_week="sat,sun", hour=10, minute=0, timezone=MADRID_TZ),
-        args=[app.bot],
+        args=[app],
     )
     scheduler.start()
 
