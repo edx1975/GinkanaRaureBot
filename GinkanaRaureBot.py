@@ -31,7 +31,7 @@ MADRID_TZ = ZoneInfo("Europe/Madrid")
 TARGET_DATE = datetime(2025, 9, 28, 11, 0, 0, tzinfo=MADRID_TZ)
 
 registered_chats = {}
-IMATGE_PATH = "imatge.jpg"
+IMATGE_PATH = "image.png"
 
 INFO_TEXT = (
     "🔗 El Bot de la Ginkana serà accessible aquí: @Gi*************Bot\n\n"
@@ -41,8 +41,8 @@ INFO_TEXT = (
     "* Diumenge a les 11h fareu la inscripció.\n"
     "* La Gran Ginkana acabarà el mateix diumenge a les 19:02h.\n"
     "* Els guanyadors tindran l'honor de ser els primers en guanyar per primer cop la Gran Ginkana, i a més, s'emportaran una Gran Cistella de Productes locals!\n"
-    "* La inscripció és gratuïta.\n"
-    "*Lo Corral AC*"
+    "* La inscripció és gratuïta.\n\n"
+    "Lo Corral AC"
 )
 
 # ----------------------------
@@ -84,30 +84,36 @@ def generar_final():
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
-    # Ignora la comanda /rebooom
     if update.message.text and update.message.text.startswith("/rebooom"):
         return
 
-    # Guarda el chat i el últim missatge enviat (None inicialment)
     if chat_id not in registered_chats:
         registered_chats[chat_id] = None
 
     text = generar_countdown()
 
     if os.path.exists(IMATGE_PATH):
-        msg = await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=open(IMATGE_PATH, "rb"),
-            caption=text,
-            parse_mode=constants.ParseMode.HTML,
-        )
+        try:
+            with open(IMATGE_PATH, "rb") as f:
+                msg = await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=f,
+                    caption=text,
+                    parse_mode=constants.ParseMode.HTML,
+                )
+        except Exception as e:
+            logger.error(f"❌ Error enviant imatge a {chat_id}: {e}")
+            msg = await update.message.reply_text(
+                text,
+                parse_mode=constants.ParseMode.HTML,
+            )
     else:
+        logger.error(f"❌ No s’ha trobat la imatge: {os.path.abspath(IMATGE_PATH)}")
         msg = await update.message.reply_text(
             text,
             parse_mode=constants.ParseMode.HTML,
         )
 
-    # Desa l'últim missatge enviat per poder-lo editar després
     registered_chats[chat_id] = msg.message_id
 
 
@@ -120,20 +126,28 @@ async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = generar_final()
 
     if os.path.exists(IMATGE_PATH):
-        msg = await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=open(IMATGE_PATH, "rb"),
-            caption=text,
-            parse_mode=constants.ParseMode.HTML,
-        )
+        try:
+            with open(IMATGE_PATH, "rb") as f:
+                msg = await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=f,
+                    caption=text,
+                    parse_mode=constants.ParseMode.HTML,
+                )
+        except Exception as e:
+            logger.error(f"❌ Error enviant imatge a {chat_id}: {e}")
+            msg = await update.message.reply_text(
+                text,
+                parse_mode=constants.ParseMode.HTML,
+            )
     else:
+        logger.error(f"❌ No s’ha trobat la imatge: {os.path.abspath(IMATGE_PATH)}")
         msg = await update.message.reply_text(
             text,
             parse_mode=constants.ParseMode.HTML,
         )
 
     registered_chats[chat_id] = msg.message_id
-
 
 # ----------------------------
 # FUNCIONS D’ACTUALITZACIÓ COUNTDOWN
