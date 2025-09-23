@@ -76,7 +76,6 @@ def generar_final():
         "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n\n"
         "⏳ El compte enrere ha finalitzat!\n\n"
         "🔗 El JOC de la Ginkana és: <b>@GinkanaGinestarBot</b>\n\n"
-        f"{INFO_TEXT}"
     )
 
 # ----------------------------
