@@ -103,12 +103,12 @@ async def enviar_recordatori(context: ContextTypes.DEFAULT_TYPE):
             logging.warning(f"No s'ha pogut enviar recordatori a {chat_id}: {e}")
 
 async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Mostra el missatge final temporalment sense aturar el compte enrere"""
-        logging.info(f"/rebooom rebut de {update.effective_chat.id}")
+    logging.info(f"/rebooom rebut de {update.effective_chat.id}")
     await update.message.reply_text(
         generar_final(),
         parse_mode=constants.ParseMode.HTML
     )
+
 
 # ----------------------------
 # MAIN
