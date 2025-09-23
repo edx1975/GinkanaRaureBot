@@ -1,17 +1,23 @@
 import logging
 import asyncio
 import os
-from datetime import datetime as dt
+from datetime import datetime as dt, time
 from zoneinfo import ZoneInfo
 from telegram import Update, constants
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 # ----------------------------
 # CONFIGURACIÓ
 # ----------------------------
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN_RAURE")
@@ -25,6 +31,7 @@ TARGET_DATE = dt(2025, 9, 28, 11, 0, 0, tzinfo=MADRID_TZ)
 # Missatge fix
 fixed_message_id = None
 fixed_chat_id = None
+
 
 # ----------------------------
 # FUNCIONS COMPTE ENRERE
@@ -43,14 +50,21 @@ def generar_countdown():
             f"       ⏲️ {seconds} segons"
         )
         return (
-            f"🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n\n"
-            f"⏳ Compte enrere fins diumenge 28 de setembre de 2025 a les 11h (hora Madrid):\n"
+            f"🎉 <b>GRAN GINKANA DE LA FIRA DEL RAURE DE GINESTAR 2025</b> 🎉\n\n"
+            f"⏳ Compte enrere fins diumenge 28 de setembre de 2025 a les 11h:\n"
             f"{countdown}\n\n"
-            f"🔗 El Bot de la Ginkana serà accessible aquí: <b>@Gi*************Bot</b>\n"
-            "ℹ️ L'enllaç al JOC es mostrarà el diumenge 28 de setembre de 2025 a les 11h."
+            f"🔗 El Bot de la Ginkana serà accessible aquí: <b>@Gi*************Bot</b>\n\n"
+            "* L'enllaç al JOC es mostrarà el diumenge 28 de setembre de 2025 a les 11h.\n"
+            "* Aneu formant equips de 2 a 6 persones."
+            "* La Ginkana constarà de 3 blocs de 10 proves.\n "
+            "* Diumenge a les 1hh fareu la inscripció.\n"
+            "* La Gran Ginkana de la Fira del Raure de Ginestar acabarà el mateix diumenge a les 19:02h \n"
+            "* Els guanyadors, tindran el gran honor de ser els primers en guanyar per primer cop la Gran Ginkana de la Fira del Raure, i a més, s'emportaran una Gran Cistella de Productes locals de la Fira! \n"
+            "* La inscripció és gratuïta"
         )
     else:
         return generar_final()
+
 
 def generar_final():
     return (
@@ -60,6 +74,7 @@ def generar_final():
         "Accediu-hi per inscriure-us i començar la Ginkana!"
     )
 
+
 async def countdown_task(context: ContextTypes.DEFAULT_TYPE):
     global fixed_message_id, fixed_chat_id
     if not fixed_message_id or not fixed_chat_id:
@@ -67,59 +82,17 @@ async def countdown_task(context: ContextTypes.DEFAULT_TYPE):
         return
 
     while True:
-        now = dt.now(MADRID_TZ)
-        remaining_seconds = (TARGET_DATE - now).total_seconds()
         message = generar_countdown()
-
         try:
             await context.bot.edit_message_text(
                 chat_id=fixed_chat_id,
                 message_id=fixed_message_id,
                 text=message,
-                parse_mode=constants.ParseMode.HTML
+                parse_mode=constants.ParseMode.HTML,
             )
         except Exception as e:
             logging.warning(f"No s'ha pogut actualitzar el missatge: {e}")
-
         await asyncio.sleep(60)  # Actualitza cada minut
 
-# ----------------------------
-# Comandes
-# ----------------------------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global fixed_message_id, fixed_chat_id
-    await update.message.reply_text(
-        "👋 Hola! Benvingut/da al Bot de la Ginkana de la Fira del Raure 2025!\n"
-        "Aquí tens el compte enrere 👇",
-        parse_mode=constants.ParseMode.HTML
-    )
-    if fixed_message_id is None:
-        sent_message = await update.message.reply_text(
-            generar_countdown(),
-            parse_mode=constants.ParseMode.HTML
-        )
-        fixed_message_id = sent_message.message_id
-        fixed_chat_id = sent_message.chat_id
-        # Llança la tasca de countdown en background
-        context.application.create_task(countdown_task(context))
 
-async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Mostra el missatge final temporalment sense aturar el compte enrera"""
-    await update.message.reply_text(
-        generar_final(),
-        parse_mode=constants.ParseMode.HTML
-    )
-
-# ----------------------------
-# Main
-# ----------------------------
-def main():
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("rebooom", rebooom))
-
-    logging.info("🚀 Bot de compte enrere en marxa...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# ---------------------------
