@@ -41,7 +41,8 @@ INFO_TEXT = (
     "* Diumenge a les 11h fareu la inscripció.\n"
     "* La Gran Ginkana acabarà el mateix diumenge a les 19:02h.\n"
     "* Els guanyadors tindran l'honor de ser els primers en guanyar per primer cop la Gran Ginkana, i a més, s'emportaran una Gran Cistella de Productes locals!\n"
-    "* La inscripció és gratuïta.\n\n"
+    "* La inscripció és gratuïta.\n"
+    "* Mentrestant, aqui tens info de la Fira del raure: /raure2025\n\n"
     "Lo Corral AC"
 )
 
@@ -73,10 +74,43 @@ def generar_countdown():
 
 def generar_final():
     return (
-        "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n\n"
+        "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n"
+        "/raure 2025 per veure horaris de la fira\n\n"
         "⏳ El compte enrere ha finalitzat!\n\n"
-        "🔗 El JOC de la Ginkana és: <b>@GinkanaGinestarBot</b>\n\n"
+        "🔗 El JOC de la Ginkana és: <b>@GinkanaGinestarBOT</b>\n\n"
     )
+
+# ----------------------------
+# FUNCIO GENERAL PER ENVIAR MISSATGE
+# ----------------------------
+async def enviar_benviguda(chat_id, context, text_func):
+    text = text_func()
+
+    if os.path.exists(IMATGE_PATH):
+        try:
+            with open(IMATGE_PATH, "rb") as f:
+                msg = await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=f,
+                    caption=text,
+                    parse_mode=constants.ParseMode.HTML,
+                )
+        except Exception as e:
+            logger.error(f"❌ Error enviant imatge a {chat_id}: {e}")
+            msg = await context.bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                parse_mode=constants.ParseMode.HTML,
+            )
+    else:
+        logger.error(f"❌ No s’ha trobat la imatge: {os.path.abspath(IMATGE_PATH)}")
+        msg = await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            parse_mode=constants.ParseMode.HTML,
+        )
+
+    registered_chats[chat_id] = msg.message_id
 
 # ----------------------------
 # HANDLERS
@@ -84,70 +118,16 @@ def generar_final():
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
+    # Evitar cridar amb /rebooom com a text
     if update.message.text and update.message.text.startswith("/rebooom"):
         return
 
-    if chat_id not in registered_chats:
-        registered_chats[chat_id] = None
-
-    text = generar_countdown()
-
-    if os.path.exists(IMATGE_PATH):
-        try:
-            with open(IMATGE_PATH, "rb") as f:
-                msg = await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=f,
-                    caption=text,
-                    parse_mode=constants.ParseMode.HTML,
-                )
-        except Exception as e:
-            logger.error(f"❌ Error enviant imatge a {chat_id}: {e}")
-            msg = await update.message.reply_text(
-                text,
-                parse_mode=constants.ParseMode.HTML,
-            )
-    else:
-        logger.error(f"❌ No s’ha trobat la imatge: {os.path.abspath(IMATGE_PATH)}")
-        msg = await update.message.reply_text(
-            text,
-            parse_mode=constants.ParseMode.HTML,
-        )
-
-    registered_chats[chat_id] = msg.message_id
+    await enviar_benviguda(chat_id, context, generar_countdown)
 
 
 async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-
-    if chat_id not in registered_chats:
-        registered_chats[chat_id] = None
-
-    text = generar_final()
-
-    if os.path.exists(IMATGE_PATH):
-        try:
-            with open(IMATGE_PATH, "rb") as f:
-                msg = await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=f,
-                    caption=text,
-                    parse_mode=constants.ParseMode.HTML,
-                )
-        except Exception as e:
-            logger.error(f"❌ Error enviant imatge a {chat_id}: {e}")
-            msg = await update.message.reply_text(
-                text,
-                parse_mode=constants.ParseMode.HTML,
-            )
-    else:
-        logger.error(f"❌ No s’ha trobat la imatge: {os.path.abspath(IMATGE_PATH)}")
-        msg = await update.message.reply_text(
-            text,
-            parse_mode=constants.ParseMode.HTML,
-        )
-
-    registered_chats[chat_id] = msg.message_id
+    await enviar_benviguda(chat_id, context, generar_final)
 
 # ----------------------------
 # FUNCIONS D’ACTUALITZACIÓ COUNTDOWN
@@ -183,13 +163,36 @@ async def actualitzar_countdown(app: Application):
                 logger.warning(f"No s'ha pogut actualitzar el compte enrere a {chat_id}: {e}")
         await asyncio.sleep(60)
 
+# ----------------------------
+# HANDLER RAURE2025
+# ----------------------------
+async def raure2025(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "📅 <b>PROGRAMA FIRA RAURE 2025</b>\n"
+        "Diumenge, 28 de setembre\n\n"
+        "⏰ 10:00H Obertura de la XVI Fira Raure\n"
+        "⏰ 10:00H-12H XVII Trobada de Puntaires\n\n"
+        "🏃‍♀️ 11:00H-19:02H Ginkana Fira Raure 2025"
+        "🎶 12:30H Vermut Electrònic amb <i>Diberty Musica</i>\n"
+        "🎺 *** Durant tot el matí cercavila a càrrec de Musicam Turba***"
+        "🍽️ 13:30H Fideuada Popular\n"
+        "🎭 17:00H L'hora dels Joglars (Animació infantil)\n"
+        "✨ 19:30H Espectacle \"L'encanteri dels Trobadors\"\n"
+        "🎉 21:00H Cloenda de la XVI Fira Raure 2025\n\n"
+        "*** Durant tot el dia: Exposició a l'Església Vella "
+        "\"Camins Històrics i Tradicionals\"***"
+    )
+
+    await update.message.reply_text(
+        text,
+        parse_mode=constants.ParseMode.HTML,
+    )
 
 # ----------------------------
 # POST_INIT HOOK
 # ----------------------------
 async def iniciar_countdown(app: Application):
     app.create_task(actualitzar_countdown(app))
-
 
 # ----------------------------
 # MAIN
@@ -203,6 +206,7 @@ def main():
     )
 
     # Handlers
+    app.add_handler(CommandHandler("raure2025", raure2025))
     app.add_handler(CommandHandler("rebooom", rebooom))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
