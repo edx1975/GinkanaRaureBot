@@ -75,7 +75,7 @@ def generar_countdown():
 def generar_final():
     return (
         "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n"
-        "/raure 2025 per veure horaris de la fira\n\n"
+        "/raure2025 per veure horaris de la fira\n\n"
         "⏳ El compte enrere ha finalitzat!\n\n"
         "🔗 El JOC de la Ginkana és: <b>@GinkanaGinestarBOT</b>\n\n"
     )
