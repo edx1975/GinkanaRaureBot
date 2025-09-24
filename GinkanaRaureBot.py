@@ -188,6 +188,10 @@ async def raure2025(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=constants.ParseMode.HTML,
     )
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    await enviar_benviguda(chat_id, context, generar_countdown)
+
 # ----------------------------
 # POST_INIT HOOK
 # ----------------------------
@@ -206,6 +210,7 @@ def main():
     )
 
     # Handlers
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("raure2025", raure2025))
     app.add_handler(CommandHandler("rebooom", rebooom))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
