@@ -34,7 +34,8 @@ registered_chats = {}
 IMATGE_PATH = "image.png"
 
 INFO_TEXT = (
-    "🔗 El Bot de la Ginkana serà accessible aquí /start: @Gi*************Bot\n\n"
+    "🔗 El Bot de la Ginkana serà accessible aqui\n"
+    "   /start : @Gi*************Bot\n\n"
     "* L'enllaç al JOC es mostrarà el diumenge 28 de setembre de 2025 a les 11h.\n"
     "* Aneu formant equips de 2 a 6 persones.\n"
     "* La Ginkana constarà de 3 blocs de 10 proves.\n"
@@ -77,7 +78,7 @@ def generar_final():
         "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n"
         "/raure2025 per veure horaris de la fira\n\n"
         "⏳ El compte enrere ha finalitzat!\n\n"
-        "🔗 El JOC de la Ginkana és: <b>@GinkanaGinestarBOT</b>\n\n"
+        "🔗 El JOC de la Ginkana és a aquest altre canal de Telegram: <b>@GinkanaGinestarBOT</b>\n\n"
     )
 
 # ----------------------------
