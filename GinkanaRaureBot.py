@@ -34,7 +34,7 @@ registered_chats = {}
 IMATGE_PATH = "image.png"
 
 INFO_TEXT = (
-    "🔗 El Bot de la Ginkana serà accessible aquí: @Gi*************Bot\n\n"
+    "🔗 El Bot de la Ginkana serà accessible aquí /start: @Gi*************Bot\n\n"
     "* L'enllaç al JOC es mostrarà el diumenge 28 de setembre de 2025 a les 11h.\n"
     "* Aneu formant equips de 2 a 6 persones.\n"
     "* La Ginkana constarà de 3 blocs de 10 proves.\n"
