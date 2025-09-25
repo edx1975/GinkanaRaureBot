@@ -44,7 +44,8 @@ INFO_TEXT = (
     "* La Gran Ginkana acabarà el mateix diumenge a les 19:02h.\n"
     "* Els guanyadors tindran l'honor de ser els primers en guanyar per primer cop la Gran Ginkana, i a més, s'emportaran una Gran Cistella de Productes locals!\n"
     "* La inscripció és gratuïta.\n"
-    "* Mentrestant, aqui tens info de la Fira Raure: /raure2025\n\n"
+    "* Mentrestant, aqui tens info de la Fira Raure:\n"
+    "   /raure2025\n\n"
     "Lo Corral AC"
 )
 
@@ -173,7 +174,7 @@ async def raure2025(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📅 <b>PROGRAMA FIRA RAURE 2025</b>\n"
         "Diumenge, 28 de setembre\n\n"
         "⏰ 10:00H Obertura de la XVI Fira Raure\n"
-        "⏰ 10:00H-12H XVII Trobada de Puntaires\n"
+        "🪡 10:00H-12H XVII Trobada de Puntaires\n"
         "🏃‍♀️ 11:00H-19:02H Ginkana Fira Raure 2025\n"
         "🎶 12:30H Vermut Electrònic amb <i>Diberty Musica</i>\n\n"
         "🎺 *** Durant tot el matí cercavila a càrrec de Musicam Turba***\n\n"
@@ -181,7 +182,7 @@ async def raure2025(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎭 17:00H L'hora dels Joglars (Animació infantil)\n"
         "✨ 19:30H Espectacle \"L'encanteri dels Trobadors\"\n"
         "🎉 21:00H Cloenda de la XVI Fira Raure 2025\n\n"
-        "*** Durant tot el dia: Exposició a l'Església Vella "
+        "🖼 *** Durant tot el dia: Exposició a l'Església Vella "
         "\"Camins Històrics i Tradicionals\"***"
     )
 
