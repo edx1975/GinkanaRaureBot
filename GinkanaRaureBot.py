@@ -1,4 +1,5 @@
 import asyncio
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -43,7 +44,7 @@ INFO_TEXT = (
     "* La Gran Ginkana acabarà el mateix diumenge a les 19:02h.\n"
     "* Els guanyadors tindran l'honor de ser els primers en guanyar per primer cop la Gran Ginkana, i a més, s'emportaran una Gran Cistella de Productes locals!\n"
     "* La inscripció és gratuïta.\n"
-    "* Mentrestant, aqui tens info de la Fira del raure: /raure2025\n\n"
+    "* Mentrestant, aqui tens info de la Fira Raure: /raure2025\n\n"
     "Lo Corral AC"
 )
 
@@ -64,7 +65,7 @@ def generar_countdown():
             f"       ⏲️ {seconds} segons"
         )
         return (
-            f"🎉 <b>GRAN GINKANA DE LA FIRA DEL RAURE DE GINESTAR 2025</b> 🎉\n\n"
+            f"🎉 <b>GRAN GINKANA DE LA FIRA RAURE DE GINESTAR 2025</b> 🎉\n\n"
             f"⏳ Compte enrere fins diumenge 28 de setembre de 2025 a les 11h:\n"
             f"{countdown}\n\n"
             f"{INFO_TEXT}"
@@ -75,7 +76,7 @@ def generar_countdown():
 
 def generar_final():
     return (
-        "🎉 <b>Ginkana de la Fira del Raure</b> 🎉\n"
+        "🎉 <b>Ginkana de la Fira Raure</b> 🎉\n"
         "/raure2025 per veure horaris de la fira\n\n"
         "⏳ El compte enrere ha finalitzat!\n\n"
         "🔗 El JOC de la Ginkana és a aquest altre canal de Telegram: <b>@GinkanaGinestarBOT</b>\n\n"
