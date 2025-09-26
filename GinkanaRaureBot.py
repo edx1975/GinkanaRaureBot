@@ -1,5 +1,4 @@
 import asyncio
-import asyncio
 import logging
 import os
 from datetime import datetime
@@ -88,31 +87,13 @@ def generar_final():
 # ----------------------------
 async def enviar_benviguda(chat_id, context, text_func):
     text = text_func()
-
-    if os.path.exists(IMATGE_PATH):
-        try:
-            with open(IMATGE_PATH, "rb") as f:
-                msg = await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=f,
-                    caption=text,
-                    parse_mode=constants.ParseMode.HTML,
-                )
-        except Exception as e:
-            logger.error(f"❌ Error enviant imatge a {chat_id}: {e}")
-            msg = await context.bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                parse_mode=constants.ParseMode.HTML,
-            )
-    else:
-        logger.error(f"❌ No s’ha trobat la imatge: {os.path.abspath(IMATGE_PATH)}")
-        msg = await context.bot.send_message(
+    with open(IMATGE_PATH, "rb") as f:
+        msg = await context.bot.send_photo(
             chat_id=chat_id,
-            text=text,
+            photo=f,
+            caption=text,
             parse_mode=constants.ParseMode.HTML,
         )
-
     registered_chats[chat_id] = msg.message_id
 
 # ----------------------------
@@ -120,11 +101,8 @@ async def enviar_benviguda(chat_id, context, text_func):
 # ----------------------------
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-
-    # Evitar cridar amb /rebooom com a text
     if update.message.text and update.message.text.startswith("/rebooom"):
         return
-
     await enviar_benviguda(chat_id, context, generar_countdown)
 
 
@@ -137,29 +115,31 @@ async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ----------------------------
 async def enviar_recordatori(context: ContextTypes.DEFAULT_TYPE):
     text = generar_countdown()
-    for chat_id, msg_id in registered_chats.items():
+    for chat_id in registered_chats.keys():
         try:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                parse_mode=constants.ParseMode.HTML,
-            )
+            with open(IMATGE_PATH, "rb") as f:
+                await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=f,
+                    caption=text,
+                    parse_mode=constants.ParseMode.HTML,
+                )
         except Exception as e:
             logger.warning(f"No s'ha pogut enviar recordatori a {chat_id}: {e}")
 
 
 async def actualitzar_countdown(app: Application):
-    """Actualitza el compte enrere cada minut editant l'últim missatge per no spam"""
+    """Actualitza el compte enrere cada minut editant la caption"""
     while True:
         text = generar_countdown()
         for chat_id, msg_id in registered_chats.items():
             if msg_id is None:
                 continue
             try:
-                await app.bot.edit_message_text(
+                await app.bot.edit_message_caption(
                     chat_id=chat_id,
                     message_id=msg_id,
-                    text=text,
+                    caption=text,
                     parse_mode=constants.ParseMode.HTML,
                 )
             except Exception as e:
@@ -185,7 +165,6 @@ async def raure2025(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🖼 *** Durant tot el dia: Exposició a l'Església Vella "
         "\"Camins Històrics i Tradicionals\"***"
     )
-
     await update.message.reply_text(
         text,
         parse_mode=constants.ParseMode.HTML,
@@ -212,13 +191,11 @@ def main():
         .build()
     )
 
-    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("raure2025", raure2025))
     app.add_handler(CommandHandler("rebooom", rebooom))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Scheduler
     scheduler = AsyncIOScheduler(timezone=MADRID_TZ)
     scheduler.add_job(
         enviar_recordatori,
