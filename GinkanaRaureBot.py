@@ -110,6 +110,13 @@ async def rebooom(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     await enviar_benviguda(chat_id, context, generar_final)
 
+
+# ----------------------------
+# USUARIS CONNECTATS
+# ----------------------------
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"👥 Usuaris registrats: {len(registered_chats)}")
+
 # ----------------------------
 # FUNCIONS D’ACTUALITZACIÓ COUNTDOWN
 # ----------------------------
@@ -128,6 +135,8 @@ async def enviar_recordatori(context: ContextTypes.DEFAULT_TYPE):
             logger.warning(f"No s'ha pogut enviar recordatori a {chat_id}: {e}")
 
 
+last_texts = {}  # 👈 per evitar "Message is not modified"
+
 async def actualitzar_countdown(app: Application):
     """Actualitza el compte enrere cada minut editant la caption"""
     while True:
@@ -135,6 +144,8 @@ async def actualitzar_countdown(app: Application):
         for chat_id, msg_id in registered_chats.items():
             if msg_id is None:
                 continue
+            if last_texts.get(chat_id) == text:
+                continue  # 👈 evita error "Message is not modified"
             try:
                 await app.bot.edit_message_caption(
                     chat_id=chat_id,
@@ -142,6 +153,7 @@ async def actualitzar_countdown(app: Application):
                     caption=text,
                     parse_mode=constants.ParseMode.HTML,
                 )
+                last_texts[chat_id] = text
             except Exception as e:
                 logger.warning(f"No s'ha pogut actualitzar el compte enrere a {chat_id}: {e}")
         await asyncio.sleep(60)
@@ -175,7 +187,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await enviar_benviguda(chat_id, context, generar_countdown)
 
 # ----------------------------
-# POST_INIT HOOK
+# POST_START HOOK
 # ----------------------------
 async def iniciar_countdown(app: Application):
     app.create_task(actualitzar_countdown(app))
@@ -187,14 +199,16 @@ def main():
     app = (
         Application.builder()
         .token(TELEGRAM_TOKEN)
-        .post_init(iniciar_countdown)
+        .post_start(iniciar_countdown)  # 👈 canviat de post_init a post_start
         .build()
     )
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("raure2025", raure2025))
     app.add_handler(CommandHandler("rebooom", rebooom))
+    app.add_handler(CommandHandler("stats", stats))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
 
     scheduler = AsyncIOScheduler(timezone=MADRID_TZ)
     scheduler.add_job(
