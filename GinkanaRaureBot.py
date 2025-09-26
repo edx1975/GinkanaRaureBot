@@ -135,7 +135,7 @@ async def enviar_recordatori(context: ContextTypes.DEFAULT_TYPE):
             logger.warning(f"No s'ha pogut enviar recordatori a {chat_id}: {e}")
 
 
-last_texts = {}  # 👈 per evitar "Message is not modified"
+last_texts = {}  # per evitar "Message is not modified"
 
 async def actualitzar_countdown(app: Application):
     """Actualitza el compte enrere cada minut editant la caption"""
@@ -145,7 +145,7 @@ async def actualitzar_countdown(app: Application):
             if msg_id is None:
                 continue
             if last_texts.get(chat_id) == text:
-                continue  # 👈 evita error "Message is not modified"
+                continue  # evita error "Message is not modified"
             try:
                 await app.bot.edit_message_caption(
                     chat_id=chat_id,
@@ -187,29 +187,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await enviar_benviguda(chat_id, context, generar_countdown)
 
 # ----------------------------
-# POST_START HOOK
-# ----------------------------
-async def iniciar_countdown(app: Application):
-    app.create_task(actualitzar_countdown(app))
-
-# ----------------------------
 # MAIN
 # ----------------------------
 def main():
-    app = (
-        Application.builder()
-        .token(TELEGRAM_TOKEN)
-        .post_start(iniciar_countdown)  # 👈 canviat de post_init a post_start
-        .build()
-    )
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
 
+    # Afegir handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("raure2025", raure2025))
     app.add_handler(CommandHandler("rebooom", rebooom))
     app.add_handler(CommandHandler("stats", stats))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-
+    # Scheduler per recordatoris
     scheduler = AsyncIOScheduler(timezone=MADRID_TZ)
     scheduler.add_job(
         enviar_recordatori,
@@ -217,6 +207,9 @@ def main():
         args=[app],
     )
     scheduler.start()
+
+    # Crear tasca del countdown automàticament
+    app.create_task(actualitzar_countdown(app))
 
     logger.info("🚀 Bot de compte enrere en marxa...")
     app.run_polling()
